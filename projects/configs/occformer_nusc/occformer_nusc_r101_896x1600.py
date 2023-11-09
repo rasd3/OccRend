@@ -18,7 +18,9 @@ class_names = ['empty', 'barrier', 'bicycle', 'bus', 'car',
 num_class = len(class_names)
 
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
-occ_size = [256, 256, 32]
+#  occ_size = [256, 256, 32]
+#  occ_size = [128, 128, 16]
+occ_size = [64, 64, 18]
 # downsample ratio in [x, y, z] when generating 3D volumes in LSS
 lss_downsample = [2, 2, 2]
 

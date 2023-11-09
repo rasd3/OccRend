@@ -741,5 +741,4 @@ class Mask2FormerNuscOccHead(MaskFormerHead):
             points=points,
             img_metas=img_metas,
         )
-
         return res

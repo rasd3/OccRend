@@ -15,7 +15,10 @@ class_names = ['empty', 'barrier', 'bicycle', 'bus', 'car',
 num_class = len(class_names)
 
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
+# occ_size = [256, 256, 64]
 occ_size = [256, 256, 32]
+#  occ_size = [128, 128, 16]
+# occ_size = [64, 64, 8]
 # downsample ratio in [x, y, z] when generating 3D volumes in LSS
 lss_downsample = [2, 2, 2]
 
@@ -48,7 +51,7 @@ grid_config = {
 numC_Trans = 128
 voxel_channels = [128, 256, 512, 1024]
 voxel_num_layer = [2, 2, 2, 2]
-voxel_strides = [1, 2, 2, 2]
+voxel_strides = [2, 2, 2, 2]
 voxel_out_indices = (0, 1, 2, 3)
 voxel_out_channels = 192
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
@@ -264,7 +267,7 @@ test_config=dict(
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=4,
+    workers_per_gpu=0,
     train=dict(
         type=dataset_type,
         data_root=data_root,

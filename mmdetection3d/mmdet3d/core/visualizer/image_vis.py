@@ -10,7 +10,9 @@ def project_pts_on_img(points,
                        raw_img,
                        lidar2img_rt,
                        max_distance=70,
-                       thickness=-1):
+                       thickness=-1,
+                       with_gui=False,
+                       ):
     """Project the 3D points cloud on 2D image.
 
     Args:
@@ -53,8 +55,11 @@ def project_pts_on_img(points,
             color=tuple(color),
             thickness=thickness,
         )
-    cv2.imshow('project_pts_img', img.astype(np.uint8))
-    cv2.waitKey(100)
+    if with_gui:
+        cv2.imshow('project_pts_img', img.astype(np.uint8))
+        cv2.waitKey(100)
+    else:
+        return img
 
 
 def plot_rect3d_on_img(img,

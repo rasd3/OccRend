@@ -8,3 +8,5 @@ from .samplers import *
 from .mask2former_occ import Mask2FormerOccHead
 from .mask2former_nusc_occ import Mask2FormerNuscOccHead
 from .mask2former_nusc_panoptic_occ import Mask2FormerNuscPanopticOccHead
+from .mask2former_nusc_occrend import Mask2FormerNuscOccRendHead
+from .mask2former_nusc_occrend_bw import Mask2FormerNuscOccRendHead_bw

@@ -99,6 +99,7 @@ class CustomNuScenesOccLSSDataset(NuScenesDataset):
         # fix data_path
         img_filenames = {}
         lidar2cam_dic = {}
+        lidar2img_rts = []
         
         for cam_type, cam_info in info['cams'].items():
             cam_info['data_path'] = cam_info['data_path'].replace('./data/nuscenes', self.data_root)
@@ -112,10 +113,19 @@ class CustomNuScenesOccLSSDataset(NuScenesDataset):
             lidar2cam_rt[3, :3] = -lidar2cam_t
             lidar2cam_dic[cam_type] = lidar2cam_rt.T
         
+            # for visualization
+            intrinsic = cam_info['cam_intrinsic']
+            viewpad = np.eye(4)
+            viewpad[:intrinsic.shape[0], :intrinsic.shape[1]] = intrinsic
+            lidar2img_rt = (viewpad @ lidar2cam_rt.T)
+            lidar2img_rts.append(lidar2img_rt)
+
         input_dict['curr'] = info
         input_dict['img_filenames'] = img_filenames
         input_dict['lidar2cam_dic'] = lidar2cam_dic
         
+        input_dict['lidar2img'] = lidar2img_rts
+
         return input_dict
 
     def evaluate_lidarseg(self, results, logger=None, **kwargs):

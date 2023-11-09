@@ -18,7 +18,7 @@ def denormalize(grid):
 
     return grid * 2.0 - 1.0
 
-def point_sample_3d(input, points, align_corners=False, **kwargs):
+def point_sample_3d(input, points, align_corners=False, mode='bilinear', **kwargs):
     """A wrapper around :func:`grid_sample` to support 3D point_coords tensors
     Unlike :func:`torch.nn.functional.grid_sample` it assumes point_coords to
     lie inside ``[0, 1] x [0, 1]`` square.
@@ -39,7 +39,7 @@ def point_sample_3d(input, points, align_corners=False, **kwargs):
         add_dim = True
         points = points.unsqueeze(2).unsqueeze(2)
     
-    output = F.grid_sample(input, denormalize(points), align_corners=align_corners, **kwargs)
+    output = F.grid_sample(input, denormalize(points), align_corners=align_corners, mode=mode, **kwargs)
     
     if add_dim:
         output = output.squeeze(3).squeeze(3)
@@ -62,11 +62,19 @@ def get_uncertainty(mask_pred, labels):
     """
     if mask_pred.shape[1] == 1:
         gt_class_logits = mask_pred.clone()
+        return -torch.abs(gt_class_logits)
     else:
-        inds = torch.arange(mask_pred.shape[0], device=mask_pred.device)
-        gt_class_logits = mask_pred[inds, labels].unsqueeze(1)
+        if False:
+            inds = torch.arange(mask_pred.shape[0], device=mask_pred.device)
+            gt_class_logits = mask_pred[inds, labels].unsqueeze(1)
+        else:
+            # Formula from PointRend
+            gt_class_logits = mask_pred.clone()
+            gt_class_logits, _ = gt_class_logits.sort(1, descending=True)
+            uncertainty_map = -1 * (gt_class_logits[:, 0] - gt_class_logits[:, 1])
+            return uncertainty_map.unsqueeze(1)
+
     
-    return -torch.abs(gt_class_logits)
 
 def unravel_indices(indices, shape):
     r"""Converts flat indices into unraveled coordinates in a target shape.
@@ -160,7 +168,10 @@ def get_nusc_lidarseg_point_coords(mask_pred, gt_lidarseg_list, labels, num_poin
     point_logits = point_sample_3d(mask_pred, point_coords[..., [2, 1, 0]], 
                                 padding_mode=padding_mode).squeeze(1)
     
-    point_uncertainties = get_uncertainty(point_logits.unsqueeze(1), None)
+    if len(point_logits.shape) == 2:
+        point_uncertainties = get_uncertainty(point_logits.unsqueeze(1), None)
+    else:
+        point_uncertainties = get_uncertainty(point_logits, None)
     num_uncertain_points = int(importance_sample_ratio * num_points)
     num_random_points = num_points - num_uncertain_points
     idx = torch.topk(point_uncertainties[:, 0, :], k=num_uncertain_points, dim=1)[1]
@@ -175,6 +186,27 @@ def get_nusc_lidarseg_point_coords(mask_pred, gt_lidarseg_list, labels, num_poin
         point_coords = torch.cat((point_coords, rand_point_coords), dim=1)
     
     return point_coords
+
+def get_point_coords_infer(mask, N):
+    device = mask.device
+    B, _, H, W, Z = mask.shape
+    mask, _ = mask.sort(1, descending=True)
+ 
+    H_step, W_step, Z_step = 1 / H, 1 / W, 1 / Z
+    N = min(H * W * Z, N)
+    points = torch.zeros(B, N, 3, dtype=torch.float, device=device)
+
+    uncertainty_map = -1 * (mask[:, 0] - mask[:, 1])
+    _, idx = uncertainty_map.view(B, -1).topk(N, dim=1)
+
+    Z_idx = idx % Z
+    W_idx = torch.div(idx, Z, rounding_mode='floor')
+    H_idx = torch.div(W_idx, W, rounding_mode='floor')
+    points[:, :, 2] = Z_step / 2.0 + (idx % Z).to(torch.float) * Z_step
+    points[:, :, 0] = W_step / 2.0 + (W_idx % W).to(torch.float) * W_step
+    points[:, :, 1] = H_step / 2.0 + (H_idx).to(torch.float) * H_step
+
+    return idx, points
 
 def get_uncertain_point_coords_3d_with_frequency(
     mask_pred, labels, gt_labels_list, gt_masks_list, sample_weights, num_points,

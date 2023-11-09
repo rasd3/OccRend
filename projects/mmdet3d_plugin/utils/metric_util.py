@@ -19,5 +19,5 @@ def fast_hist_crop(output, target, unique_label):
     
     hist = hist[unique_label + 1, :]
     hist = hist[:, unique_label + 1]
-    
+
     return hist
