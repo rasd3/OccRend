@@ -15,10 +15,7 @@ class_names = ['empty', 'barrier', 'bicycle', 'bus', 'car',
 num_class = len(class_names)
 
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
-# occ_size = [256, 256, 64]
 occ_size = [256, 256, 32]
-#  occ_size = [128, 128, 16]
-# occ_size = [64, 64, 8]
 # downsample ratio in [x, y, z] when generating 3D volumes in LSS
 lss_downsample = [2, 2, 2]
 
@@ -51,7 +48,7 @@ grid_config = {
 numC_Trans = 128
 voxel_channels = [128, 256, 512, 1024]
 voxel_num_layer = [2, 2, 2, 2]
-voxel_strides = [1, 2, 2, 2]
+voxel_strides = [2, 2, 2, 2]
 voxel_out_indices = (0, 1, 2, 3)
 voxel_out_channels = 192
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
@@ -108,6 +105,7 @@ model = dict(
         encoder=dict(
             type='DetrTransformerEncoder',
             num_layers=6,
+            # num_layers=3,
             transformerlayers=dict(
                 type='BaseTransformerLayer',
                 attn_cfgs=dict(
@@ -133,7 +131,7 @@ model = dict(
             normalize=True),
     ),
     pts_bbox_head=dict(
-        type='Mask2FormerNuscOccHead',
+        type='Mask2FormerNuscOccRendHead',
         feat_channels=mask2former_feat_channel,
         out_channels=mask2former_output_channel,
         num_queries=mask2former_num_queries,
@@ -143,6 +141,15 @@ model = dict(
         # using stand-alone pixel decoder
         positional_encoding=dict(
             type='SinePositionalEncoding3D', num_feats=mask2former_pos_channel, normalize=True),
+        # for OccRend
+        num_rend_points = 8096,
+        sampling_method = 'gt',
+        loss_rend = dict(
+            type='CrossEntropyLoss',
+            use_sigmoid=False,
+            loss_weight=1.0,
+            reduction='mean',
+            class_weight=[1.0] * num_class),
         # using the original transformer decoder
         transformer_decoder=dict(
             type='DetrTransformerDecoder',
@@ -232,7 +239,7 @@ train_pipeline = [
             cls_metas=nusc_class_metas),
     dict(type='OccDefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img_inputs', 'gt_occ', 'points_occ'],
-            meta_keys=['pc_range', 'occ_size']),
+            meta_keys=['pc_range', 'occ_size', 'lidar2img', 'img_filenames']),
 ]
 
 test_pipeline = [
@@ -267,7 +274,7 @@ test_config=dict(
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=0,
+    workers_per_gpu=2,
     train=dict(
         type=dataset_type,
         data_root=data_root,

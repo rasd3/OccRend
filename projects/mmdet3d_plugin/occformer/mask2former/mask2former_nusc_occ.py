@@ -123,7 +123,7 @@ class Mask2FormerNuscOccHead(MaskFormerHead):
         if train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
             self.sampler = build_sampler(self.train_cfg.sampler, context=self)
-            self.num_points = self.train_cfg.get('num_points', 12544)
+            self.num_points = self.train_cfg.get('num_points', 4096)
             self.oversample_ratio = self.train_cfg.get('oversample_ratio', 3.0)
             self.importance_sample_ratio = self.train_cfg.get(
                 'importance_sample_ratio', 0.75)
@@ -502,12 +502,15 @@ class Mask2FormerNuscOccHead(MaskFormerHead):
         labels, masks = targets
         return labels, masks
 
-    def forward_lidarseg(self, cls_preds, mask_preds, points, img_metas=None):
+    def forward_lidarseg(self, cls_preds, mask_preds, points, img_metas=None, voxel_rends=None):
         pc_range = torch.tensor(img_metas[0]['pc_range']).type_as(mask_preds)
         pc_range_min = pc_range[:3]
         pc_range = pc_range[3:] - pc_range_min
         
-        voxel_preds = self.format_results(cls_preds, mask_preds)
+        if voxel_rends is not None:
+            voxel_preds = voxel_rends
+        else:
+            voxel_preds = self.format_results(cls_preds, mask_preds)
         # sample the corresponding predictions from the voxel predictions for lidarseg evaluation
         point_logits = []
         for batch_index, points_i in enumerate(points):

@@ -144,6 +144,13 @@ model = dict(
             type='SinePositionalEncoding3D', num_feats=mask2former_pos_channel, normalize=True),
         # for OccRend
         num_rend_points = 8096,
+        sampling_method = 'gt',
+        loss_rend = dict(
+            type='CrossEntropyLoss',
+            use_sigmoid=False,
+            loss_weight=1.0,
+            reduction='mean',
+            class_weight=[1.0] * num_class),
         # using the original transformer decoder
         transformer_decoder=dict(
             type='DetrTransformerDecoder',
@@ -194,8 +201,7 @@ model = dict(
     ),
     train_cfg=dict(
         pts=dict(
-            #  num_points=12544 * 4,
-            num_points=12544,
+            num_points=12544 * 4,
             oversample_ratio=3.0,
             importance_sample_ratio=0.75,
             assigner=dict(
@@ -269,7 +275,7 @@ test_config=dict(
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=4,
+    workers_per_gpu=2,
     train=dict(
         type=dataset_type,
         data_root=data_root,

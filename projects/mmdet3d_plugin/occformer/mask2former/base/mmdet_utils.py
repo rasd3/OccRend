@@ -144,10 +144,11 @@ def batch_sample_valid_coords_with_frequencies(num_points, gt_labels_list,
     return point_indices, point_coords
 
 def get_nusc_lidarseg_point_coords(mask_pred, gt_lidarseg_list, labels, num_points, oversample_ratio, 
-        importance_sample_ratio, point_cloud_range, padding_mode='border', remove_noise_lidarseg=False):
+        importance_sample_ratio, point_cloud_range, padding_mode='border', remove_noise_lidarseg=False, rend=False):
 
     assert oversample_ratio >= 1
     assert 0 <= importance_sample_ratio <= 1
+
     batch_size = mask_pred.shape[0]
     num_sampled = int(num_points * oversample_ratio)
     
@@ -158,7 +159,10 @@ def get_nusc_lidarseg_point_coords(mask_pred, gt_lidarseg_list, labels, num_poin
         if remove_noise_lidarseg:
             gt_lidarseg = gt_lidarseg[gt_lidarseg[:, -1] > 0]
         
-        point_coords = (gt_lidarseg[:, :3] - point_cloud_range[:3]) / (point_cloud_range[3:] - point_cloud_range[:3])
+        if rend:
+            point_coords = gt_lidarseg.new_zeros((0, 3))
+        else:
+            point_coords = (gt_lidarseg[:, :3] - point_cloud_range[:3]) / (point_cloud_range[3:] - point_cloud_range[:3])
         num_rand = num_sampled - point_coords.shape[0]
         rand_point_coords = torch.rand((num_rand, 3), device=mask_pred.device)
         point_coords = torch.cat((point_coords, rand_point_coords), dim=0)

@@ -51,7 +51,7 @@ grid_config = {
 numC_Trans = 128
 voxel_channels = [128, 256, 512, 1024]
 voxel_num_layer = [2, 2, 2, 2]
-voxel_strides = [1, 2, 2, 2]
+voxel_strides = [2, 2, 2, 2]
 voxel_out_indices = (0, 1, 2, 3)
 voxel_out_channels = 192
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
@@ -193,7 +193,7 @@ model = dict(
     ),
     train_cfg=dict(
         pts=dict(
-            num_points=12544 * 4,
+            num_points=4096,
             oversample_ratio=3.0,
             importance_sample_ratio=0.75,
             assigner=dict(
@@ -318,3 +318,5 @@ evaluation = dict(
     save_best='nuScenes_lidarseg_mean',
     rule='greater',
 )
+
+load_from = './ckpts/occformer_nusc_r50.pth'
